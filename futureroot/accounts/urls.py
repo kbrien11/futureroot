@@ -5,6 +5,6 @@ from rest_framework.authtoken.views import obtain_auth_token
 
 
 urlpatterns = [
-    path("register", views.createUser),
-    path("login", views.login),
+    path("register", views.createUser, name="create_user"),
+    path("login", views.login, name="login"),
 ]

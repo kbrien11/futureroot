@@ -35,3 +35,11 @@ venv/
 # Migrations (optional if you're regenerating them)
 **/migrations/
 !**/migrations/__init__.py
+
+
+# Ignore all files in data directory
+data/*
+
+
+# Danger: ignores all commands in the project
+

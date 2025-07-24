@@ -9,6 +9,6 @@ class locationSerializer(serializers.ModelSerializer):
             "zip_code",
             "cost_center_infant",
             "housing_cost",
-            "school_rating",
+            "great_schools_url ",
             "tax_rate",
         ]

@@ -9,7 +9,7 @@ class Location(models.Model):
     housing_cost = models.DecimalField(
         max_digits=10, decimal_places=2, blank=True, null=True
     )
-    niche_school_url = models.URLField(blank=True, null=True)
+    great_schools_url = models.URLField(blank=True, null=True)
     tax_rate = models.DecimalField(
         max_digits=5, decimal_places=2, blank=True, null=True
     )

@@ -7,10 +7,13 @@ from django.db.models import Q
 from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_framework import status
+
+from locations.serializers import locationSerializer
 from .models import Childcare
 from .serializer import childCareSerializer
 from .utils import get_zip_from_address, formatted_cost
 from locations.models import Location
+from locations.utils import enrich_location_with_aarp_scores
 
 
 @api_view(["GET"])
@@ -68,6 +71,11 @@ def compare_childcare_view(request):
 
         for z in zip_codes:
             loc = Location.objects.filter(zip_code=z).first()
+            loc_ser = locationSerializer(loc, many=False)
+            loc_data = loc_ser.data  # .data gives you the actual dictionary
+
+            if loc_data.get("livability_score") is None:
+                enrich_location_with_aarp_scores(loc, z)
             if loc and loc.housing_cost:
                 housing_costs.append(float(loc.housing_cost))
 
@@ -78,8 +86,7 @@ def compare_childcare_view(request):
         response_data[town] = {
             "avg_monthly_childcare": avg_childcare,
             "avg_housing_cost": formatted_cost(avg_housing),
-            "avg_property_taxes": loc.tax_rate,
-            "Niche_url": loc.niche_school_url,
+            "locationData": loc_ser.data,
         }
 
     return Response(response_data)

@@ -13,6 +13,18 @@ class Location(models.Model):
     tax_rate = models.DecimalField(
         max_digits=5, decimal_places=2, blank=True, null=True
     )
+    commuter_score = models.CharField(null=True, blank=True)
+
+    livability_score = models.CharField(null=True, blank=True)
+
+    housing_score = models.CharField(null=True, blank=True)
+    neighborhood_score = models.CharField(null=True, blank=True)
+    transportation_score = models.CharField(null=True, blank=True)
+    environment_score = models.CharField(null=True, blank=True)
+    health_score = models.CharField(null=True, blank=True)
+    engagement_score = models.CharField(null=True, blank=True)
+    opportunity_score = models.CharField(null=True, blank=True)
+    median_household_income = models.CharField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.name}, {self.city}, {self.state}"

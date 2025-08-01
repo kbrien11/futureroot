@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,10 +23,49 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-gc6fzu2rp^oh1$lnfa652o%re1)@ogz)zsm5x66ulu^zs2y%@="
 
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] [{levelname}] [{name}] {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        # Optional: Add file handler
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": os.path.join(BASE_DIR, "debug.log"),
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        # Task-level logger
+        "locations.tasks": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Catchall
+        "": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+    },
+}
 
 
 # Application definition
@@ -48,6 +87,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [

@@ -3,6 +3,8 @@ import pandas as pd
 from locations.models import Location
 from decouple import config
 import requests
+from playwright.sync_api import sync_playwright
+
 
 RENTCAST_API_KEY = config("RENTCAST_API_KEY")  # <- Add your actual key here
 
@@ -90,3 +92,103 @@ def get_rentcast_data(zip_code: str) -> dict:
     except requests.RequestException as e:
         print(f"RentCast API error for {zip_code}: {e}")
         return {}
+
+
+def scrape_aarp_scores(zip_code):
+    from playwright.sync_api import sync_playwright
+
+    categories = [
+        "Overall",
+        "Housing",
+        "Neighborhood",
+        "Transportation",
+        "Environment",
+        "Health",
+        "Engagement",
+        "Opportunity",
+    ]
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+
+        try:
+            url = f"https://livabilityindex.aarp.org/search/{zip_code}%2C%20United%20States"
+            page.goto(url, timeout=15000)
+            page.wait_for_selector("svg text", timeout=10000)
+
+            locator = page.locator("li", has_text="Median Household Income:")
+            value = locator.evaluate(
+                "node => node.textContent.replace('Median Household Income:', '').trim()"
+            )
+
+            # Grab all SVG <text> nodes
+            text_nodes = page.query_selector_all("svg text")
+            raw_text = [node.text_content().strip() for node in text_nodes]
+
+            # Filter numeric values only
+            numbers = [val for val in raw_text if val.isdigit()]
+
+            # Extract scores using the repeating pattern: every 3rd item starting at index 5
+            scores = [int(numbers[i]) for i in range(5, len(numbers), 3)]
+
+            # Trim to number of known categories
+            scores = scores[: len(categories)]
+
+            score_dict = dict(zip(categories, scores))
+            score_dict["Income"] = value
+
+            browser.close()
+            return score_dict
+
+        except Exception as e:
+            print(f"Error scraping AARP scores for ZIP {zip_code}: {e}")
+            browser.close()
+            return {}
+
+
+def assign_livability_grade(score):
+    """
+    Assigns a letter grade based on livability score (0–100 scale).
+    """
+    try:
+        score = int(float(score))  # handles numeric strings like "72.0"
+    except (ValueError, TypeError):
+        return None  # gracefully bail on non-numeric inputs
+    if score >= 75:
+        return "A+"
+    elif score >= 65:
+        return "A"
+    elif score >= 57:
+        return "B-"
+    elif score >= 47:
+        return "C+"
+    elif score >= 40:
+        return "C"
+    elif score >= 35:
+        return "C-"
+    elif score >= 25:
+        return "D"
+    else:
+        return "F"
+
+
+def enrich_location_with_aarp_scores(loc, zip_code):
+    """
+    Scrapes AARP scores for a ZIP and updates the Location model instance.
+    """
+    score = scrape_aarp_scores(zip_code)
+    print(zip_code)
+    print(score)
+
+    loc.livability_score = assign_livability_grade(score.get("Overall"))
+    loc.housing_score = assign_livability_grade(score.get("Housing"))
+    loc.neighborhood_score = assign_livability_grade(score.get("Neighborhood"))
+    loc.transportation_score = assign_livability_grade(score.get("Transportation"))
+    loc.environment_score = assign_livability_grade(score.get("Environment"))
+    loc.health_score = assign_livability_grade(score.get("Health"))
+    loc.engagement_score = assign_livability_grade(score.get("Engagement"))
+    loc.opportunity_score = assign_livability_grade(score.get("Opportunity"))
+    loc.median_household_income = score.get("Income")
+
+    loc.save()

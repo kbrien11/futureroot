@@ -1,9 +1,12 @@
 import os
+from uszipcode import SearchEngine
+
 import pandas as pd
 from locations.models import Location
 from decouple import config
 import requests
 from playwright.sync_api import sync_playwright
+from math import radians, sin, cos, sqrt, atan2
 
 
 RENTCAST_API_KEY = config("RENTCAST_API_KEY")  # <- Add your actual key here
@@ -192,3 +195,22 @@ def enrich_location_with_aarp_scores(loc, zip_code):
     loc.median_household_income = score.get("Income")
 
     loc.save()
+
+
+def haversine(lat1, lon1, lat2, lon2):
+
+    R = 3959  # Earth radius in miles
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = (
+        sin(dlat / 2) ** 2
+        + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    )
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return R * c
+
+
+def get_coords(zip_code):
+    search = SearchEngine()
+    result = search.by_zipcode(zip_code)
+    return result.lat, result.lng

@@ -25,6 +25,3 @@ class Location(models.Model):
     engagement_score = models.CharField(null=True, blank=True)
     opportunity_score = models.CharField(null=True, blank=True)
     median_household_income = models.CharField(null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.name}, {self.city}, {self.state}"
